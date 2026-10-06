@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kwadraten & Machten Avontuur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;900&family=Nunito:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #DB2777 100%);
+            min-height: 100vh;
+            user-select: none;
+            overflow-x: hidden;
+            touch-action: pan-y; /* Prevent pull-to-refresh on mobile */
+        }
+
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka', cursive;
+        }
+
+        .font-retro {
+            font-family: 'Press+Start+2P', monospace;
+        }
+
+        /* Glassmorphism cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.93);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Balloon styling */
+        .balloon {
+            transition: transform 0.1s ease;
+            box-shadow: inset -8px -8px 0px rgba(0, 0, 0, 0.15), 0 10px 15px rgba(0,0,0,0.2);
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid inherit;
+            filter: brightness(0.9);
+        }
+
+        .balloon::before {
+            content: '';
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .balloon-pop {
+            animation: pop 0.25s forwards ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-bounce-in {
+            animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Button click feedback */
+        .btn-bounce {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-bounce:active {
+            transform: scale(0.92);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.6);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col text-slate-800" onload="initApp()">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full max-w-5xl mx-auto p-4 flex justify-between items-center z-20">
+        <div onclick="showView('menu')" class="cursor-pointer flex items-center space-x-3 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/80 hover:scale-105 transition">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-inner">
+                <i class="fa-solid fa-superscript text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 leading-tight font-heading">Kwadraten & Machten</h1>
+                <p class="text-xs text-indigo-600 font-semibold">Leer & Oefen met exponenten!</p>
+            </div>
+        </div>
+
+        <!-- Right header tools -->
+        <div class="flex items-center space-x-3">
+            <div class="bg-amber-100 text-amber-800 font-bold px-4 py-2 rounded-2xl shadow-sm border border-amber-300 flex items-center space-x-2">
+                <i class="fa-solid fa-star text-amber-500 text-lg animate-bounce"></i>
+                <span id="total-stars-count" class="text-lg">0</span>
+            </div>
+
+            <button id="sound-btn" onclick="toggleSound()" class="bg-white/90 p-3 rounded-2xl shadow-md border border-white hover:bg-slate-50 text-slate-700 btn-bounce" title="Geluid AAN/UIT">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-xl text-emerald-600"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-2 flex-grow flex items-center justify-center relative">
+
+        <!-- ================= MAIN MENU VIEW ================= -->
+        <div id="view-menu" class="w-full max-w-4xl glass-card rounded-3xl p-6 md:p-8 my-4 transition-all duration-300">
+            <div class="text-center mb-8">
+                <span class="inline-block bg-indigo-100 text-indigo-700 font-bold px-4 py-1.5 rounded-full text-sm mb-3">
+                    <i class="fa-solid fa-bolt mr-1"></i> Kies je spelmodus
+                </span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 font-heading">Klaar om machtig te rekenen?</h2>
+                <p class="text-slate-600 mt-1 max-w-md mx-auto">Word de meester van kwadraten, derdemachten en exponentiële groei!</p>
+            </div>
+
+            <!-- Game Mode Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                
+                <!-- Mode 1: Ballonnen Prikken -->
+                <div onclick="selectGameMode('balloons')" class="group relative bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-200 overflow-hidden btn-bounce">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition"></div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🎈</div>
+                        <div>
+                            <h3 class="text-2xl font-bold font-heading">Ballonnen Prikken</h3>
+                            <p class="text-pink-100 text-sm mt-1">Prik de ballon met de juiste uitkomst voordat hij wegvliegt!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode 2: Tegen de Klok -->
+                <div onclick="selectGameMode('timeattack')" class="group relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-200 overflow-hidden btn-bounce">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition"></div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner">⚡</div>
+                        <div>
+                            <h3 class="text-2xl font-bold font-heading">Tegen de Klok</h3>
+                            <p class="text-amber-100 text-sm mt-1">Los zo veel mogelijk machtssommen op binnen 60 seconden!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode 3: Visueel Leren -->
+                <div onclick="showView('visual')" class="group relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-200 overflow-hidden btn-bounce">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition"></div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🎨</div>
+                        <div>
+                            <h3 class="text-2xl font-bold font-heading">Visuele Explorer</h3>
+                            <p class="text-emerald-100 text-sm mt-1">Ontdek waarom $x^2$ een vierkant is en hoe machten groeien!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode 4: Trofeeën & Stats -->
+                <div onclick="showView('trophies')" class="group relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-200 overflow-hidden btn-bounce">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition"></div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🏆</div>
+                        <div>
+                            <h3 class="text-2xl font-bold font-heading">Trofeeënkast</h3>
+                            <p class="text-indigo-100 text-sm mt-1">Bekijk je gescoorde medailles, badges en nauwkeurigheid.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode 5: Super Mario Platformer -->
+                <div onclick="showStageSelect()" class="md:col-span-2 group relative bg-gradient-to-br from-red-500 via-orange-500 to-amber-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-200 overflow-hidden btn-bounce border-4 border-yellow-300">
+                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition"></div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner">🍄</div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="text-2xl font-bold font-heading">Super Machten Bros!</h3>
+                                <span class="bg-yellow-300 text-red-900 font-extrabold text-xs px-2.5 py-1 rounded-full uppercase tracking-wider font-retro">Multi-Stage</span>
+                            </div>
+                            <p class="text-orange-100 text-sm mt-1">Ren, spring, verzamel power-ups (1-Up!) en versla vijanden met machten!</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= STAGE SELECT VIEW ================= -->
+        <div id="view-stage-select" class="hidden w-full max-w-4xl glass-card rounded-3xl p-6 md:p-8 relative">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="showView('menu')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-2xl font-bold text-sm btn-bounce flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i><span>Menu</span>
+                </button>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 font-heading">Kies je Stage</h2>
+                <div class="w-16"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+                <!-- World 1 -->
+                <div onclick="startPlatformerGame(1)" class="group bg-gradient-to-br from-sky-400 to-emerald-500 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-2 transition btn-bounce border-4 border-emerald-200">
+                    <div class="text-4xl mb-3">🌱</div>
+                    <h3 class="text-xl font-bold font-heading mb-1">World 1: Grasland</h3>
+                    <p class="text-xs text-sky-100 mb-4">Zonnige heuvels en Goomba's. Perfect voor beginners!</p>
+                    <span class="bg-white/20 text-xs font-retro px-3 py-1 rounded-full inline-block">STAGE 1-1</span>
+                </div>
+                <!-- World 2 -->
+                <div onclick="startPlatformerGame(2)" class="group bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-2 transition btn-bounce border-4 border-purple-300">
+                    <div class="text-4xl mb-3">💎</div>
+                    <h3 class="text-xl font-bold font-heading mb-1">World 2: Kristallen Grot</h3>
+                    <p class="text-xs text-purple-100 mb-4">Ondergrondse grotten met snellere vijanden en vleermuizen!</p>
+                    <span class="bg-white/20 text-xs font-retro px-3 py-1 rounded-full inline-block">STAGE 2-1</span>
+                </div>
+                <!-- World 3 -->
+                <div onclick="startPlatformerGame(3)" class="group bg-gradient-to-br from-red-600 to-amber-600 rounded-3xl p-6 text-white shadow-xl cursor-pointer hover:-translate-y-2 transition btn-bounce border-4 border-amber-300">
+                    <div class="text-4xl mb-3">🔥</div>
+                    <h3 class="text-xl font-bold font-heading mb-1">World 3: Magma Kasteel</h3>
+                    <p class="text-xs text-red-100 mb-4">Harde lava-muren, snelle actie en pittige derdemachten!</p>
+                    <span class="bg-white/20 text-xs font-retro px-3 py-1 rounded-full inline-block">STAGE 3-1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CATEGORY SELECT VIEW ================= -->
+        <div id="view-category-select" class="hidden w-full max-w-4xl glass-card rounded-3xl p-6 md:p-8 relative">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="showView('menu')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-2xl font-bold text-sm btn-bounce flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i><span>Menu</span>
+                </button>
+                <h2 class="text-2xl font-extrabold text-slate-800 font-heading">Kies je categorieën</h2>
+                <button onclick="toggleAllCategories(true)" class="text-indigo-600 font-bold text-sm hover:underline">Alles</button>
+            </div>
+            
+            <div id="category-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8"></div>
+
+            <div class="flex justify-center">
+                <button onclick="startGameWithSelection()" class="bg-gradient-to-r from-emerald-400 to-emerald-600 hover:from-emerald-500 hover:to-emerald-700 text-white font-extrabold font-heading text-xl md:text-2xl py-4 px-12 rounded-full shadow-lg shadow-emerald-500/30 btn-bounce w-full max-w-sm flex items-center justify-center space-x-3">
+                    <span>Start Game!</span><i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= GAME MODE: BALLONNEN PRIKKEN ================= -->
+        <div id="view-game-balloons" class="hidden w-full max-w-3xl glass-card rounded-3xl p-6 md:p-8 relative flex flex-col justify-between min-h-[500px]">
+            <div class="flex justify-between items-center mb-4 z-10">
+                <button onclick="quitGame()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-xl font-bold text-xs btn-bounce">
+                    <i class="fa-solid fa-xmark mr-1"></i> Stop
+                </button>
+                <div id="balloon-lives-hearts" class="bg-rose-100 px-3 py-1.5 rounded-xl text-rose-700 font-bold tracking-widest">❤️❤️❤️</div>
+                <div id="balloon-streak-badge" class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1.5 rounded-xl text-xs">Reeks: 0</div>
+                <div class="flex items-center space-x-2">
+                    <span id="balloon-combo" class="bg-amber-100 text-amber-800 px-3 py-1.5 rounded-xl font-extrabold text-xs">x1</span>
+                    <span class="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-xl font-bold font-heading">Score: <span id="balloon-score">0</span></span>
+                </div>
+            </div>
+
+            <div class="text-center bg-white/80 border border-white p-4 rounded-2xl shadow-sm mb-4 z-10">
+                <span class="text-slate-400 font-bold text-xs uppercase tracking-wider block">Prik de ballon met de uitkomst van:</span>
+                <div id="balloon-question" class="text-3xl md:text-4xl font-black text-slate-800 font-heading">5² = ?</div>
+            </div>
+
+            <div id="balloon-arena" class="relative w-full h-80 bg-gradient-to-b from-sky-200 to-sky-400 rounded-2xl overflow-hidden border-4 border-sky-300 shadow-inner">
+                <!-- Balloons animated via JS -->
+            </div>
+        </div>
+
+        <!-- ================= GAME MODE: TEGEN DE KLOK ================= -->
+        <div id="view-game-timeattack" class="hidden w-full max-w-2xl glass-card rounded-3xl p-6 md:p-8 relative">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="quitGame()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-xl font-bold text-xs btn-bounce">
+                    <i class="fa-solid fa-xmark mr-1"></i> Stop
+                </button>
+                <div id="lives-display" class="bg-rose-100 px-3 py-1.5 rounded-xl text-rose-700 font-bold flex items-center space-x-1">
+                    <span id="player-lives-hearts" class="text-base tracking-widest">❤️❤️️❤️</span>
+                </div>
+                <div class="flex items-center space-x-2 bg-amber-100 px-4 py-2 rounded-2xl text-amber-800 font-bold">
+                    <i class="fa-solid fa-stopwatch text-amber-600 animate-spin"></i>
+                    <span id="timeattack-timer" class="text-xl font-heading">60s</span>
+                </div>
+                <div class="bg-indigo-100 px-4 py-2 rounded-2xl text-indigo-800 font-bold">
+                    Score: <span id="timeattack-score" class="text-xl font-heading">0</span>
+                </div>
+            </div>
+
+            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden mb-8 shadow-inner">
+                <div id="timer-bar" class="bg-amber-500 h-full w-full transition-all duration-1000 ease-linear"></div>
+            </div>
+
+            <div class="text-center bg-white/80 border border-white p-8 rounded-3xl shadow-sm mb-8">
+                <span class="text-slate-400 font-bold text-sm uppercase tracking-wider block mb-2">Bereken de macht!</span>
+                <div id="timeattack-question" class="text-4xl md:text-5xl font-black text-slate-800 font-heading tracking-wide">2⁴ = ?</div>
+            </div>
+
+            <div id="timeattack-options" class="grid grid-cols-2 gap-4">
+                <!-- Options injected by JS -->
+            </div>
+        </div>
+
+        <!-- ================= GAME MODE: SUPER MARIO PLATFORMER ================= -->
+        <div id="view-game-platformer" class="hidden w-full max-w-4xl glass-card rounded-3xl p-4 md:p-6 relative flex flex-col justify-between">
+            <div class="flex items-center justify-between bg-slate-900 text-white backdrop-blur px-4 py-3 rounded-2xl shadow-md z-10 mb-3 border-2 border-yellow-400">
+                <button onclick="quitGame()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-xl font-bold text-xs btn-bounce border border-rose-400">
+                    <i class="fa-solid fa-xmark mr-1"></i> MENU
+                </button>
+                <div class="text-center hidden sm:block">
+                    <span id="pf-world-title" class="text-xs md:text-sm font-extrabold text-yellow-300 font-retro tracking-widest block">WORLD 1-1</span>
+                    <span class="text-[10px] text-sky-200 font-retro">SUPER MACHTEN BROS</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <span class="text-[9px] uppercase font-bold text-rose-300 block font-retro">LEVENS</span>
+                        <span id="pf-lives" class="text-xs font-extrabold text-red-400 font-retro tracking-widest">❤️❤️❤️</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[9px] uppercase font-bold text-yellow-300 block font-retro">COINS</span>
+                        <span id="pf-coins" class="text-sm font-extrabold text-yellow-400 font-retro">🪙 0</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[9px] uppercase font-bold text-amber-300 block font-retro">SCORE</span>
+                        <span id="pf-score" class="text-sm font-extrabold text-white font-retro">000000</span>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <span class="text-[9px] uppercase font-bold text-emerald-300 block font-retro">DOEL</span>
+                        <span id="pf-progress" class="text-sm font-extrabold text-emerald-400 font-retro">0/10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="pf-canvas-container" class="w-full bg-gradient-to-b from-sky-400 to-sky-200 rounded-2xl overflow-hidden border-4 border-amber-600 shadow-2xl flex-grow relative">
+                <canvas id="platformCanvas" width="800" height="480" class="w-full h-auto max-h-[50vh] object-cover block"></canvas>
+            </div>
+
+            <!-- Touch Controls -->
+            <div class="flex gap-3 mt-4 h-16 sm:h-20">
+                <button id="pf-btn-left" class="flex-1 bg-gradient-to-t from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white text-2xl sm:text-3xl rounded-2xl shadow-lg border-b-4 border-slate-900 btn-bounce touch-manipulation flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="pf-btn-right" class="flex-1 bg-gradient-to-t from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white text-2xl sm:text-3xl rounded-2xl shadow-lg border-b-4 border-slate-900 btn-bounce touch-manipulation flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button id="pf-btn-jump" class="flex-[2] bg-gradient-to-t from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-lg sm:text-xl font-black font-retro rounded-2xl shadow-lg border-b-4 border-red-900 btn-bounce touch-manipulation flex items-center justify-center space-x-2">
+                    <span>JUMP</span> <i class="fa-solid fa-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODE 3: VISUELE EXPLORER ================= -->
+        <div id="view-visual" class="hidden w-full max-w-4xl glass-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="showView('menu')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-2xl font-bold text-sm btn-bounce flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i><span>Menu</span>
+                </button>
+                <h2 class="text-2xl font-extrabold text-slate-800 font-heading">Visuele Explorer</h2>
+                <div class="w-16"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white/80 p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                    <h3 class="font-bold text-slate-700 mb-2 text-sm uppercase tracking-wider">Kies type macht</h3>
+                    <button onclick="setVisualCategory('kwadraten')" id="vis-btn-kwadraten" class="w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-indigo-600 text-white border-indigo-600">Kwadraten ($x^2$)</button>
+                    <button onclick="setVisualCategory('derdemachten')" id="vis-btn-derdemachten" class="w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-slate-100 text-slate-700 border-slate-200">Derdemachten ($x^3$)</button>
+                    <button onclick="setVisualCategory('machten_2')" id="vis-btn-machten_2" class="w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-slate-100 text-slate-700 border-slate-200">Machten van 2 ($2^x$)</button>
+                    <button onclick="setVisualCategory('machten_10')" id="vis-btn-machten_10" class="w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-slate-100 text-slate-700 border-slate-200">Machten van 10 ($10^x$)</button>
+                </div>
+
+                <div class="md:col-span-2 bg-white/90 p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 id="visual-title" class="text-2xl font-bold text-indigo-700 font-heading">Kwadraat van 5</h3>
+                            <span id="visual-equation" class="text-xl font-extrabold text-slate-800 bg-indigo-50 px-3 py-1 rounded-xl">5² = 25</span>
+                        </div>
+                        <div class="flex items-center space-x-2 overflow-x-auto pb-3 mb-4" id="visual-value-bar"></div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 min-h-[230px] flex flex-col items-center justify-center">
+                            <div id="visual-display-area" class="flex flex-col items-center justify-center gap-2 max-w-full overflow-auto p-2"></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-600 text-center font-semibold bg-indigo-50/80 p-3 rounded-xl">
+                        💡 <span id="visual-explanation">5² betekent 5 × 5 = 25.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODE 4: TROFEEËNKAST ================= -->
+        <div id="view-trophies" class="hidden w-full max-w-4xl glass-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="showView('menu')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-2xl font-bold text-sm btn-bounce flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i><span>Menu</span>
+                </button>
+                <h2 class="text-2xl font-extrabold text-slate-800 font-heading">Jouw Badges & Prestaties</h2>
+                <button onclick="resetProgress()" class="text-xs text-rose-500 font-bold hover:underline">Reset Voortgang</button>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="font-bold text-slate-700 mb-4 text-lg">Behaalde Badges</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="badges-container"></div>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-slate-700 mb-4 text-lg">Nauwkeurigheid Per Categorie</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" id="category-stats-container"></div>
+            </div>
+        </div>
+
+        <!-- ================= RESULTS MODAL ================= -->
+        <div id="modal-results" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-white/80 animate-bounce-in">
+                <div id="results-icon" class="text-6xl mb-3">⚡</div>
+                <h3 id="results-title" class="text-3xl font-extrabold text-slate-800 font-heading mb-1">Machtige Prestatie!</h3>
+                <p id="results-subtitle" class="text-slate-500 font-semibold mb-6">Je hebt de exponenten bedwongen!</p>
+
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6 space-y-3">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-500 font-bold">Behaalde Score:</span>
+                        <span id="results-score" class="text-xl font-extrabold text-indigo-600 font-heading">0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-500 font-bold">Juiste Antwoorden:</span>
+                        <span id="results-correct" class="text-lg font-extrabold text-emerald-600 font-heading">0/0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-500 font-bold">Hoogste Combo:</span>
+                        <span id="results-combo" class="text-lg font-extrabold text-amber-500 font-heading">x1</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-500 font-bold">Verdiende Sterren:</span>
+                        <span id="results-stars" class="text-lg font-extrabold text-amber-500 font-heading">+0 ⭐</span>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="closeResultsModal(); showView('menu');" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3.5 rounded-2xl btn-bounce">
+                        Hoofdmenu
+                    </button>
+                    <button onclick="closeResultsModal(); restartCurrentGame();" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl btn-bounce shadow-lg shadow-indigo-600/30">
+                        Opnieuw!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-4 text-white/80 font-semibold text-xs z-10">
+        Kwadraten & Machten Avontuur &copy; Educatieve Reken Game
+    </footer>
+
+    <script>
+        /* Web Audio API Sound Synthesizer */
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playPop() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playCoin() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+            
+            // New 1-Up Powerup Sound!
+            play1Up() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                // Classic ascending arpeggio for extra life
+                const notes = [1318.51, 1567.98, 2637.02, 2093.00, 2349.32, 3135.96];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0, now + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.1 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.1);
+                });
+            }
+
+            playJump() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(450, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, now + idx * 0.05);
+                    gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.05 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.05);
+                    osc.stop(now + idx * 0.05 + 0.2);
+                });
+            }
+
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            playFanfare() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const arpeggio = [440, 554.37, 659.25, 880];
+                arpeggio.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    const startTime = now + idx * 0.1;
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.25, startTime + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.4);
+                });
+            }
+        }
+
+        const sound = new SoundEffects();
+
+        const CATEGORIES = {
+            'kwadraten_1': { name: 'Kwadraten 1 - 10', desc: '1² t/m 10²', icon: '🟩' },
+            'kwadraten_2': { name: 'Kwadraten 11 - 20', desc: '11² t/m 20²', icon: '🟪' },
+            'derdemachten': { name: 'Derdemachten', desc: '1³ t/m 10³', icon: '🧊' },
+            'machten_2': { name: 'Machten van 2', desc: '2¹ t/m 2¹⁰', icon: '⚡' },
+            'machten_3': { name: 'Machten van 3', desc: '3¹ t/m 3⁶', icon: '🔥' },
+            'machten_10': { name: 'Machten van 10', desc: '10¹ t/m 10⁶', icon: '🚀' }
+        };
+
+        let appState = {
+            stars: 0,
+            selectedCategories: ['kwadraten_1', 'machten_2'],
+            currentMode: null,
+            stats: {},
+            badges: [
+                { id: 'first_game', title: 'Eerste Macht!', desc: 'Speel je eerste spelletje', icon: '🐣', unlocked: false },
+                { id: 'streak_5', title: 'Exponentiële Flow', desc: 'Haal een combo van 5x', icon: '🔥', unlocked: false },
+                { id: 'stars_50', title: 'Machten Verzamelaar', desc: 'Verzamel 50 sterren', icon: '⭐', unlocked: false },
+                { id: 'speed_demon', title: 'Machtssnelheid', desc: 'Haal 100+ score bij Tegen de Klok', icon: '⚡', unlocked: false },
+                { id: 'master_power', title: 'Machten Meester', desc: 'Beantwoord 50 vragen goed', icon: '👑', unlocked: false }
+            ]
+        };
+
+        let gameSession = {
+            score: 0,
+            correctCount: 0,
+            totalQuestions: 0,
+            combo: 1,
+            maxCombo: 1,
+            timer: null,
+            timeLeft: 60,
+            currentQuestion: null,
+            activeBalloons: [],
+            isAnswering: false,
+            world: 1,
+            lives: 3
+        };
+
+        function initApp() {
+            loadState();
+            showView('menu');
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('kwadraten_machten_state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appState = { ...appState, ...parsed };
+                } catch(e) { console.error(e); }
+            }
+            Object.keys(CATEGORIES).forEach(cat => {
+                if (!appState.stats[cat]) appState.stats[cat] = { correct: 0, total: 0 };
+            });
+            updateStarsDisplay();
+        }
+
+        function saveState() {
+            localStorage.setItem('kwadraten_machten_state', JSON.stringify(appState));
+            updateStarsDisplay();
+        }
+
+        function updateStarsDisplay() {
+            document.getElementById('total-stars-count').innerText = appState.stars;
+        }
+
+        function updateLivesDisplay() {
+            // Modified to handle up to 5 lives visually due to the 1-Up powerup
+            let maxDisplay = Math.max(3, gameSession.lives);
+            if (maxDisplay > 5) maxDisplay = 5; // Cap visual hearts to 5 to avoid UI breakage
+            
+            let hearts = '';
+            for (let i = 0; i < maxDisplay; i++) {
+                if (i < gameSession.lives) hearts += '❤️';
+                else hearts += '🤍';
+            }
+            
+            const els = ['player-lives-hearts', 'pf-lives', 'balloon-lives-hearts'];
+            els.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = hearts;
+            });
+        }
+
+        function toggleSound() {
+            sound.enabled = !sound.enabled;
+            const icon = document.getElementById('sound-icon');
+            if (sound.enabled) icon.className = 'fa-solid fa-volume-high text-xl text-emerald-600';
+            else icon.className = 'fa-solid fa-volume-xmark text-xl text-rose-500';
+        }
+
+        function showView(viewId) {
+            ['menu', 'stage-select', 'category-select', 'game-balloons', 'game-timeattack', 'game-platformer', 'visual', 'trophies'].forEach(id => {
+                const el = document.getElementById('view-' + id);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById('view-' + viewId);
+            if (target) target.classList.remove('hidden');
+
+            if (viewId === 'visual') initVisualMode();
+            else if (viewId === 'trophies') renderTrophiesView();
+        }
+
+        function selectGameMode(mode) {
+            appState.currentMode = mode;
+            renderCategorySelectionGrid();
+            showView('category-select');
+        }
+
+        function showStageSelect() {
+            appState.currentMode = 'platformer';
+            showView('stage-select');
+        }
+
+        function renderCategorySelectionGrid() {
+            const grid = document.getElementById('category-grid');
+            grid.innerHTML = '';
+
+            Object.keys(CATEGORIES).forEach(key => {
+                const cat = CATEGORIES[key];
+                const isSelected = appState.selectedCategories.includes(key);
+                const btn = document.createElement('button');
+                btn.className = `p-4 rounded-2xl font-heading font-extrabold text-left flex flex-col justify-between border-2 transition btn-bounce ${
+                    isSelected ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300'
+                }`;
+                btn.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-2">
+                        <span class="text-2xl">${cat.icon}</span>
+                        <div>
+                            <div class="text-lg leading-snug">${cat.name}</div>
+                            <div class="text-xs font-normal opacity-80">${cat.desc}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs font-semibold mt-2 pt-2 border-t border-white/20 flex justify-between">
+                        <span>Behaald:</span><span>${appState.stats[key]?.correct || 0} goed</span>
+                    </div>
+                `;
+                btn.onclick = () => toggleCategorySelection(key);
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleCategorySelection(key) {
+            const index = appState.selectedCategories.indexOf(key);
+            if (index > -1) {
+                if (appState.selectedCategories.length > 1) appState.selectedCategories.splice(index, 1);
+            } else {
+                appState.selectedCategories.push(key);
+            }
+            renderCategorySelectionGrid();
+        }
+
+        function toggleAllCategories(select) {
+            if (select) appState.selectedCategories = Object.keys(CATEGORIES);
+            else appState.selectedCategories = ['kwadraten_1'];
+            renderCategorySelectionGrid();
+        }
+
+        function startGameWithSelection() {
+            saveState();
+            if (appState.currentMode === 'balloons') startBalloonsGame();
+            else if (appState.currentMode === 'timeattack') startTimeAttackGame();
+        }
+
+        function generateMathQuestion() {
+            const selectedCat = appState.selectedCategories[Math.floor(Math.random() * appState.selectedCategories.length)];
+            let base, exp, answer, textHTML, textPlain, explanation;
+
+            switch (selectedCat) {
+                case 'kwadraten_1': base = Math.floor(Math.random() * 10) + 1; exp = 2; break;
+                case 'kwadraten_2': base = Math.floor(Math.random() * 10) + 11; exp = 2; break;
+                case 'derdemachten': base = Math.floor(Math.random() * 10) + 1; exp = 3; break;
+                case 'machten_2': base = 2; exp = Math.floor(Math.random() * 10) + 1; break;
+                case 'machten_3': base = 3; exp = Math.floor(Math.random() * 6) + 1; break;
+                case 'machten_10': base = 10; exp = Math.floor(Math.random() * 6) + 1; break;
+                default: base = 5; exp = 2;
+            }
+
+            answer = Math.pow(base, exp);
+            textHTML = `${base}<sup>${exp}</sup>`;
+            textPlain = selectedCat.includes('kwadraten') ? `${base}²` : (exp===3 ? `${base}³` : `${base}^${exp}`);
+            
+            return { category: selectedCat, base: base, exp: exp, answer: answer, textHTML: textHTML, textPlain: textPlain };
+        }
+
+        function generateDistractors(q, count = 4) {
+            const correct = q.answer;
+            const distractors = new Set();
+            const candidates = [ q.base * q.exp, Math.pow(q.base, q.exp + 1), Math.pow(q.base, Math.max(1, q.exp - 1)), Math.pow(q.base + 1, q.exp), correct + q.base, correct - q.base ];
+
+            for (const cand of candidates) if (Number.isInteger(cand) && cand > 0 && cand !== correct && cand < 10000000) distractors.add(cand);
+
+            let step = 1;
+            while (distractors.size < count + 5) {
+                if (correct + step !== correct) distractors.add(correct + step);
+                if (correct - step > 0 && correct - step !== correct) distractors.add(correct - step);
+                step += Math.floor(Math.random() * 3) + 1;
+            }
+
+            const distArray = Array.from(distractors).sort(() => Math.random() - 0.5).slice(0, count - 1);
+            const finalOptions = [correct, ...distArray].sort(() => Math.random() - 0.5);
+            return finalOptions;
+        }
+
+        let balloonAnimFrame = null;
+        const balloonColors = ['bg-rose-500 border-rose-600', 'bg-sky-500 border-sky-600', 'bg-emerald-500 border-emerald-600', 'bg-amber-500 border-amber-600', 'bg-purple-500 border-purple-600', 'bg-indigo-500 border-indigo-600'];
+
+        function startBalloonsGame() {
+            showView('game-balloons');
+            gameSession = { score: 0, correctCount: 0, totalQuestions: 0, combo: 1, maxCombo: 1, activeBalloons: [], isAnswering: false, lives: 3 };
+            updateBalloonHUD(); updateLivesDisplay(); nextBalloonQuestion();
+            if (balloonAnimFrame) cancelAnimationFrame(balloonAnimFrame);
+            spawnBalloonsForCurrentQuestion();
+
+            let lastTime = performance.now();
+            function animateBalloons(time) {
+                const dt = Math.min((time - lastTime) / 1000, 0.1);
+                lastTime = time;
+                const arenaHeight = document.getElementById('balloon-arena').clientHeight;
+
+                let missedCorrect = false;
+                for (let i = gameSession.activeBalloons.length - 1; i >= 0; i--) {
+                    const b = gameSession.activeBalloons[i];
+                    b.y += b.speed * 60 * dt;
+                    b.el.style.bottom = `${b.y}px`;
+                    b.x = b.baseX + Math.sin(time / 400 + b.id * 10) * 3;
+                    b.el.style.left = `${b.x}%`;
+
+                    if (b.y > arenaHeight + 80) {
+                        if (gameSession.currentQuestion && b.value === gameSession.currentQuestion.answer && !b.popped) missedCorrect = true;
+                        b.el.remove();
+                        gameSession.activeBalloons.splice(i, 1);
+                    }
+                }
+
+                if (missedCorrect) handleMissedQuestion();
+                else if (gameSession.activeBalloons.length < 5 && !document.getElementById('view-game-balloons').classList.contains('hidden')) spawnSingleBalloon();
+
+                balloonAnimFrame = requestAnimationFrame(animateBalloons);
+            }
+            balloonAnimFrame = requestAnimationFrame(animateBalloons);
+        }
+
+        function handleMissedQuestion() {
+            sound.playWrong();
+            gameSession.combo = 1; gameSession.lives--; updateLivesDisplay();
+            if (gameSession.lives <= 0 || gameSession.totalQuestions >= 15) setTimeout(() => endGame(), 500);
+            else { nextBalloonQuestion(); spawnBalloonsForCurrentQuestion(); }
+        }
+
+        function updateBalloonHUD() {
+            document.getElementById('balloon-score').innerText = gameSession.score;
+            document.getElementById('balloon-combo').innerText = `x${gameSession.combo}`;
+            document.getElementById('balloon-streak-badge').innerText = `Reeks: ${gameSession.correctCount}`;
+        }
+
+        function nextBalloonQuestion() {
+            gameSession.currentQuestion = generateMathQuestion();
+            document.getElementById('balloon-question').innerHTML = `${gameSession.currentQuestion.textHTML} = ?`;
+        }
+
+        function spawnBalloonsForCurrentQuestion() {
+            document.getElementById('balloon-arena').innerHTML = '';
+            gameSession.activeBalloons = [];
+            const answers = generateDistractors(gameSession.currentQuestion, 5);
+            const lanes = [8, 26, 44, 62, 80].sort(() => Math.random() - 0.5);
+            answers.forEach((val, i) => spawnSingleBalloon(val, lanes[i % lanes.length], -90 - (i * 50 + Math.random() * 20)));
+        }
+
+        function spawnSingleBalloon(forcedValue = null, forcedX = null, forcedY = null) {
+            const arena = document.getElementById('balloon-arena');
+            if (!arena || !gameSession.currentQuestion) return;
+
+            let value = forcedValue;
+            if (value === null) {
+                if (!gameSession.activeBalloons.some(b => b.value === gameSession.currentQuestion.answer && !b.popped)) value = gameSession.currentQuestion.answer;
+                else value = generateDistractors(gameSession.currentQuestion, 6).find(v => v !== gameSession.currentQuestion.answer) || 1;
+            }
+
+            const baseX = forcedX !== null ? forcedX : [8, 26, 44, 62, 80][Math.floor(Math.random() * 5)];
+            const startY = forcedY !== null ? forcedY : (-90 - Math.random() * 50);
+            const el = document.createElement('div');
+            el.className = `balloon absolute w-20 h-24 rounded-full ${balloonColors[Math.floor(Math.random() * balloonColors.length)]} text-white font-heading font-black text-xl flex items-center justify-center cursor-pointer select-none transition-transform hover:scale-110 z-10 shadow-lg px-1 text-center`;
+            el.innerText = value;
+            el.style.left = `${baseX}%`; el.style.bottom = `${startY}px`;
+
+            const bObj = { id: Math.random(), el: el, value: value, baseX: baseX, x: baseX, y: startY, speed: Math.random() * 1.2 + 0.9, popped: false };
+            el.onclick = (e) => popBalloon(bObj, e);
+            arena.appendChild(el);
+            gameSession.activeBalloons.push(bObj);
+        }
+
+        function popBalloon(bObj, event) {
+            if (bObj.popped) return;
+            bObj.popped = true;
+            sound.playPop(); bObj.el.classList.add('balloon-pop');
+
+            const isCorrect = bObj.value === gameSession.currentQuestion.answer;
+            const qCat = gameSession.currentQuestion.category;
+            gameSession.totalQuestions++; appState.stats[qCat].total++;
+
+            if (isCorrect) {
+                sound.playCorrect();
+                gameSession.score += 10 * gameSession.combo;
+                gameSession.correctCount++; gameSession.combo++;
+                if (gameSession.combo > gameSession.maxCombo) gameSession.maxCombo = gameSession.combo;
+                appState.stats[qCat].correct++; appState.stars += 1;
+                
+                // createParticles(event.clientX, event.clientY);
+                setTimeout(() => { nextBalloonQuestion(); spawnBalloonsForCurrentQuestion(); }, 200);
+            } else {
+                sound.playWrong();
+                gameSession.combo = 1; gameSession.lives--; updateLivesDisplay();
+                if (gameSession.lives <= 0) setTimeout(() => endGame(), 300);
+            }
+            updateBalloonHUD(); saveState(); checkBadges();
+            if (gameSession.totalQuestions >= 15 && isCorrect) setTimeout(() => endGame(), 500);
+        }
+
+        function startTimeAttackGame() {
+            showView('game-timeattack');
+            gameSession = { score: 0, correctCount: 0, totalQuestions: 0, combo: 1, maxCombo: 1, timeLeft: 60, isAnswering: false, lives: 3 };
+            document.getElementById('timeattack-score').innerText = '0';
+            document.getElementById('timeattack-timer').innerText = '60s';
+            document.getElementById('timer-bar').style.width = '100%';
+            updateLivesDisplay(); nextTimeAttackQuestion();
+
+            if (gameSession.timer) clearInterval(gameSession.timer);
+            gameSession.timer = setInterval(() => {
+                gameSession.timeLeft--;
+                document.getElementById('timeattack-timer').innerText = `${gameSession.timeLeft}s`;
+                document.getElementById('timer-bar').style.width = `${(gameSession.timeLeft / 60) * 100}%`;
+                if (gameSession.timeLeft <= 0) { clearInterval(gameSession.timer); endGame(); }
+            }, 1000);
+        }
+
+        function nextTimeAttackQuestion() {
+            gameSession.isAnswering = false;
+            gameSession.currentQuestion = generateMathQuestion();
+            document.getElementById('timeattack-question').innerHTML = `${gameSession.currentQuestion.textHTML} = ?`;
+            const container = document.getElementById('timeattack-options');
+            container.innerHTML = '';
+
+            generateDistractors(gameSession.currentQuestion, 4).forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-white hover:bg-indigo-50 border-2 border-slate-200 text-slate-800 font-heading font-extrabold text-2xl md:text-3xl py-5 rounded-2xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition btn-bounce';
+                btn.innerText = ans;
+                btn.onclick = () => {
+                    if (gameSession.isAnswering) return;
+                    gameSession.isAnswering = true;
+                    gameSession.totalQuestions++; appState.stats[gameSession.currentQuestion.category].total++;
+                    if (ans === gameSession.currentQuestion.answer) {
+                        sound.playCorrect(); btn.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+                        gameSession.score += 10 * gameSession.combo; gameSession.correctCount++; gameSession.combo++;
+                        if (gameSession.combo > gameSession.maxCombo) gameSession.maxCombo = gameSession.combo;
+                        appState.stats[gameSession.currentQuestion.category].correct++; appState.stars += 1;
+                        document.getElementById('timeattack-score').innerText = gameSession.score;
+                        setTimeout(() => nextTimeAttackQuestion(), 250);
+                    } else {
+                        sound.playWrong(); btn.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+                        gameSession.combo = 1; gameSession.lives--; updateLivesDisplay();
+                        if (gameSession.lives <= 0) setTimeout(() => endGame(), 400);
+                        else setTimeout(() => nextTimeAttackQuestion(), 500);
+                    }
+                    saveState(); checkBadges();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        let pfReq = null; let pfContext = null;
+
+        if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2; if (h < 2 * r) r = h / 2;
+                this.beginPath(); this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + r, y, r); this.closePath(); return this;
+            }
+        }
+
+        function startPlatformerGame(worldNum = 1) {
+            showView('game-platformer');
+            const canvas = document.getElementById('platformCanvas');
+            pfContext = canvas.getContext('2d');
+            
+            gameSession = {
+                score: 0, combo: 1, maxCombo: 1, correctCount: 0, totalQuestions: 0, coins: 0, lives: 3, world: worldNum,
+                pf: {
+                    player: { x: 100, y: 300, vx: 0, vy: 0, w: 36, h: 42, speed: 6.5, jump: -13.5, grounded: false, facing: 'right', animFrame: 0 },
+                    keys: { left: false, right: false, up: false },
+                    platforms: [], coins: [], enemies: [], clouds: [], hills: [], powerups: [], // ADDED powerups array
+                    cameraX: 0, nextChunkX: 0, activeQuestion: null, isGameOver: false
+                }
+            };
+            
+            const titles = { 1: "WORLD 1-1: GRASLAND", 2: "WORLD 2-1: KRISTALLEN GROT", 3: "WORLD 3-1: MAGMA KASTEEL" };
+            document.getElementById('pf-world-title').innerText = titles[worldNum] || "WORLD 1-1";
+            updateLivesDisplay();
+            
+            for (let i = 0; i < 15; i++) {
+                gameSession.pf.clouds.push({ x: i * 350 + Math.random() * 100, y: 40 + Math.random() * 80, w: 90 + Math.random() * 60, h: 45 });
+                gameSession.pf.hills.push({ x: i * 500 + Math.random() * 150, w: 180 + Math.random() * 100, h: 110 + Math.random() * 50 });
+            }
+
+            gameSession.pf.platforms.push({ x: -200, y: 400, w: 1200, h: 100, type: 'ground' });
+            gameSession.pf.nextChunkX = 1000;
+            
+            if (!canvas.hasAttribute('data-events-bound')) {
+                const setKey = (code, state) => {
+                    if (code === 'ArrowLeft' || code === 'KeyA') gameSession.pf.keys.left = state;
+                    if (code === 'ArrowRight' || code === 'KeyD') gameSession.pf.keys.right = state;
+                    if (code === 'ArrowUp' || code === 'KeyW' || code === 'Space') gameSession.pf.keys.up = state;
+                };
+                window.addEventListener('keydown', (e) => setKey(e.code, true));
+                window.addEventListener('keyup', (e) => setKey(e.code, false));
+                
+                const bindTouch = (id, key) => {
+                    const btn = document.getElementById(id);
+                    if (!btn) return;
+                    ['touchstart', 'mousedown'].forEach(ev => btn.addEventListener(ev, e => { e.preventDefault(); gameSession.pf.keys[key] = true; }));
+                    ['touchend', 'mouseup', 'mouseleave'].forEach(ev => btn.addEventListener(ev, e => { e.preventDefault(); gameSession.pf.keys[key] = false; }));
+                };
+                bindTouch('pf-btn-left', 'left'); bindTouch('pf-btn-right', 'right'); bindTouch('pf-btn-jump', 'up');
+                canvas.setAttribute('data-events-bound', 'true');
+            }
+            
+            updateMarioHUD();
+            if (pfReq) cancelAnimationFrame(pfReq);
+            pfLoop();
+        }
+
+        function pfGenerateChunk() {
+            const chunkWidth = 1200;
+            const cx = gameSession.pf.nextChunkX;
+            const q = generateMathQuestion();
+            const wNum = gameSession.world;
+            
+            gameSession.pf.platforms.push({ x: cx, y: 400, w: 380, h: 100, type: 'ground' });
+            gameSession.pf.platforms.push({ x: cx + 540, y: 400, w: chunkWidth - 540, h: 100, type: 'ground' });
+            gameSession.pf.platforms.push({ x: cx + 140, y: 320, w: 110, h: 20, type: 'step' });
+            gameSession.pf.platforms.push({ x: cx + 420, y: 300, w: 40, h: 100, type: 'wall' });
+
+            generateDistractors(q, 3).forEach((ans, i) => {
+                gameSession.pf.platforms.push({
+                    x: cx + 600 + (i * 180), y: 220 + (i % 2 === 0 ? 0 : -40), w: 54, h: 54,
+                    type: 'answer_block', value: ans, isCorrect: ans === q.answer, question: q, touched: false, bounceOffset: 0
+                });
+            });
+            
+            for (let c = 0; c < 4; c++) {
+                gameSession.pf.coins.push({ x: cx + 150 + (c * 35), y: 190, w: 24, h: 24, collected: false });
+                gameSession.pf.coins.push({ x: cx + 620 + (c * 40), y: 150, w: 24, h: 24, collected: false });
+            }
+
+            // Powerup Spawning Logic (20% chance per chunk)
+            if (Math.random() < 0.20) {
+                gameSession.pf.powerups.push({
+                    x: cx + 250 + Math.random() * 300,
+                    y: 120 + Math.random() * 80, // Floating high
+                    w: 32, h: 32,
+                    collected: false,
+                    bounceY: 0
+                });
+            }
+
+            gameSession.pf.enemies.push({
+                x: cx + 280, y: 364, w: 36, h: 36, vx: wNum === 1 ? -1.6 : (wNum === 2 ? -2.2 : -2.8),
+                minX: cx + 50, maxX: cx + 360, alive: true, type: 'math_goomba'
+            });
+
+            if (wNum >= 2) gameSession.pf.enemies.push({ x: cx + 680, y: 140, w: 32, h: 32, vx: -2.0, minX: cx + 580, maxX: cx + 900, startY: 140, alive: true, type: 'flyer' });
+            gameSession.pf.platforms.push({ x: cx + 1100, y: 50, w: 70, h: 350, type: 'pipe', isOpen: false, question: q });
+            gameSession.pf.nextChunkX += chunkWidth;
+        }
+
+        function updateMarioHUD() {
+            document.getElementById('pf-score').innerText = String(gameSession.score).padStart(6, '0');
+            document.getElementById('pf-coins').innerText = `🪙 ${gameSession.coins}`;
+            document.getElementById('pf-progress').innerText = `${gameSession.correctCount}/10`;
+        }
+
+        function pfLoop() {
+            if (gameSession.pf.isGameOver) return;
+            pfUpdate(); pfDraw();
+            pfReq = requestAnimationFrame(pfLoop);
+        }
+
+        function pfUpdate() {
+            const p = gameSession.pf.player;
+            const keys = gameSession.pf.keys;
+            
+            if (keys.left) { p.vx -= 1.0; p.facing = 'left'; p.animFrame += 0.2; }
+            else if (keys.right) { p.vx += 1.0; p.facing = 'right'; p.animFrame += 0.2; }
+            else { p.vx *= 0.8; }
+            
+            if (p.vx > p.speed) p.vx = p.speed; if (p.vx < -p.speed) p.vx = -p.speed;
+            
+            if (keys.up && p.grounded) { p.vy = gameSession.world === 3 ? -14.5 : -13.5; p.grounded = false; sound.playJump(); }
+            
+            p.vy += 0.75; p.x += p.vx; p.y += p.vy;
+            if (p.x < gameSession.pf.cameraX) { p.x = gameSession.pf.cameraX; p.vx = 0; }
+            
+            let isGrounded = false; let currentQ = null;
+
+            for (let plat of gameSession.pf.platforms) {
+                if (plat.type === 'pipe' && plat.isOpen && plat.y > -200) plat.y -= 8;
+                if (plat.type === 'answer_block' && !plat.touched && plat.x + plat.w > p.x - 200 && !currentQ) currentQ = plat.question;
+                if (plat.bounceOffset > 0) plat.bounceOffset *= 0.85;
+
+                if (p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y < plat.y + plat.h && p.y + p.h > plat.y) {
+                    let fromTop = (p.y + p.h - p.vy) <= plat.y + 14;
+                    let fromBottom = (p.y - p.vy) >= plat.y + plat.h - 14;
+                    
+                    if (fromTop && p.vy >= 0) { p.y = plat.y - p.h; p.vy = 0; isGrounded = true; } 
+                    else if (fromBottom && p.vy < 0) {
+                        p.y = plat.y + plat.h; p.vy = 0; plat.bounceOffset = 8;
+                        
+                        if (plat.type === 'answer_block' && !plat.touched) {
+                            plat.touched = true;
+                            if (plat.isCorrect) {
+                                sound.playCorrect();
+                                gameSession.score += 100 * gameSession.combo; gameSession.correctCount++; gameSession.totalQuestions++;
+                                gameSession.combo++; if (gameSession.combo > gameSession.maxCombo) gameSession.maxCombo = gameSession.combo;
+                                appState.stats[plat.question.category].correct++; appState.stats[plat.question.category].total++; appState.stars += 2;
+                                gameSession.pf.platforms.forEach(other => { if (other.type === 'pipe' && other.question === plat.question) other.isOpen = true; });
+                                if (gameSession.correctCount >= 10) setTimeout(() => { gameSession.pf.isGameOver = true; saveState(); endGame(); }, 800);
+                            } else {
+                                sound.playWrong();
+                                gameSession.combo = 1; gameSession.lives--; updateLivesDisplay(); saveState(); checkBadges();
+                                if (gameSession.lives <= 0) setTimeout(() => { gameSession.pf.isGameOver = true; saveState(); endGame(); }, 400);
+                                else plat.touched = false;
+                            }
+                            updateMarioHUD();
+                        }
+                    } 
+                    else {
+                        if (p.vx > 0) p.x = plat.x - p.w;
+                        else if (p.vx < 0) p.x = plat.x + plat.w;
+                        p.vx = 0;
+                    }
+                }
+            }
+            p.grounded = isGrounded;
+            gameSession.pf.activeQuestion = currentQ || (gameSession.pf.platforms.find(p => p.type === 'answer_block' && !p.touched)?.question);
+            
+            for (let coin of gameSession.pf.coins) {
+                if (!coin.collected && p.x < coin.x + coin.w && p.x + p.w > coin.x && p.y < coin.y + coin.h && p.y + p.h > coin.y) {
+                    coin.collected = true; gameSession.coins++; gameSession.score += 50; sound.playCoin(); updateMarioHUD();
+                }
+            }
+
+            // Powerup Interaction
+            for (let pu of gameSession.pf.powerups) {
+                if (!pu.collected) {
+                    pu.bounceY = Math.sin(Date.now() / 200) * 8; // Float animation
+                    if (p.x < pu.x + pu.w && p.x + p.w > pu.x && p.y < pu.y + pu.bounceY + pu.h && p.y + p.h > pu.y + pu.bounceY) {
+                        pu.collected = true;
+                        if (gameSession.lives < 5) { // Cap at 5 lives visually
+                            gameSession.lives++;
+                            updateLivesDisplay();
+                        }
+                        gameSession.score += 500;
+                        sound.play1Up(); // Play special sound!
+                        updateMarioHUD();
+                    }
+                }
+            }
+
+            for (let en of gameSession.pf.enemies) {
+                if (!en.alive) continue;
+                en.x += en.vx; if (en.x < en.minX || en.x > en.maxX) en.vx *= -1;
+                if (en.type === 'flyer') en.y = (en.startY || 140) + Math.sin(Date.now() / 200) * 45;
+
+                if (p.x < en.x + en.w && p.x + p.w > en.x && p.y < en.y + en.h && p.y + p.h > en.y) {
+                    if (p.vy > 0 && p.y + p.h - p.vy <= en.y + 12) {
+                        en.alive = false; p.vy = -10; gameSession.score += 200; sound.playPop(); updateMarioHUD();
+                    } else {
+                        sound.playWrong();
+                        p.x -= 80 * Math.sign(p.vx || 1); p.y -= 30; p.vy = -5; gameSession.combo = 1; gameSession.lives--; updateLivesDisplay();
+                        if (gameSession.lives <= 0) { gameSession.pf.isGameOver = true; saveState(); endGame(); }
+                    }
+                }
+            }
+            
+            if (p.y > 600) {
+                sound.playWrong();
+                p.y = 100; p.x -= 200; p.vy = 0; p.vx = 0; gameSession.lives--; updateLivesDisplay();
+                if (gameSession.lives <= 0) { gameSession.pf.isGameOver = true; saveState(); endGame(); }
+            }
+
+            const targetCamX = p.x - 300;
+            if (targetCamX > gameSession.pf.cameraX) gameSession.pf.cameraX += (targetCamX - gameSession.pf.cameraX) * 0.15;
+            if (p.x + 800 > gameSession.pf.nextChunkX) pfGenerateChunk();
+        }
+
+        function pfDraw() {
+            const ctx = pfContext; const wNum = gameSession.world; const cx = gameSession.pf.cameraX;
+            const bgGradients = { 1: ['#60A5FA', '#93C5FD'], 2: ['#312E81', '#4F46E5'], 3: ['#7F1D1D', '#B91C1C'] };
+            
+            ctx.fillStyle = bgGradients[wNum][0]; ctx.fillRect(0, 0, 800, 480);
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, 480);
+            bgGrad.addColorStop(0, 'rgba(255,255,255,0)'); bgGrad.addColorStop(1, bgGradients[wNum][1]);
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 800, 480);
+
+            ctx.save(); ctx.translate(-cx, 0);
+
+            ctx.fillStyle = wNum === 2 ? 'rgba(255,255,255,0.1)' : 'rgba(255, 255, 255, 0.7)';
+            for (let cloud of gameSession.pf.clouds) {
+                ctx.beginPath();
+                ctx.arc(cloud.x + cx * 0.4, cloud.y, cloud.h/2, Math.PI/2, Math.PI*1.5);
+                ctx.arc(cloud.x + cloud.w/2 + cx * 0.4, cloud.y - 15, cloud.h/1.5, Math.PI, 0);
+                ctx.arc(cloud.x + cloud.w + cx * 0.4, cloud.y, cloud.h/2, Math.PI*1.5, Math.PI/2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = wNum === 1 ? '#86EFAC' : (wNum === 2 ? '#6B21A8' : '#78350F');
+            for (let hill of gameSession.pf.hills) {
+                ctx.beginPath();
+                ctx.moveTo(hill.x + cx * 0.6, 480);
+                ctx.quadraticCurveTo(hill.x + hill.w/2 + cx * 0.6, 480 - hill.h*2, hill.x + hill.w + cx * 0.6, 480);
+                ctx.fill();
+            }
+
+            for (let plat of gameSession.pf.platforms) {
+                if (plat.type === 'ground') {
+                    ctx.fillStyle = wNum === 1 ? '#22C55E' : (wNum === 2 ? '#4C1D95' : '#991B1B');
+                    ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                    ctx.fillStyle = wNum === 1 ? '#FDE047' : (wNum === 2 ? '#A78BFA' : '#FCA5A5');
+                    ctx.fillRect(plat.x, plat.y + 12, plat.w, plat.h - 12);
+                } else if (plat.type === 'step' || plat.type === 'wall') {
+                    ctx.fillStyle = wNum === 1 ? '#B45309' : (wNum === 2 ? '#312E81' : '#451A03');
+                    ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(plat.x, plat.y, plat.w, 8);
+                } else if (plat.type === 'pipe') {
+                    ctx.fillStyle = '#15803D'; ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+                    ctx.fillStyle = '#22C55E'; ctx.fillRect(plat.x-4, plat.y, plat.w+8, 20);
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(plat.x+plat.w-15, plat.y, 15, plat.h);
+                } else if (plat.type === 'answer_block') {
+                    const drawY = plat.y - (plat.bounceOffset || 0);
+                    ctx.fillStyle = plat.touched ? (plat.isCorrect ? '#22C55E' : '#94A3B8') : '#EAB308';
+                    ctx.beginPath(); ctx.roundRect(plat.x, drawY, plat.w, plat.h, 8); ctx.fill();
+                    ctx.strokeStyle = '#CA8A04'; ctx.lineWidth = 4; ctx.stroke();
+                    ctx.fillStyle = plat.touched ? (plat.isCorrect ? 'white' : '#CBD5E1') : '#713F12';
+                    ctx.font = 'bold 24px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(plat.value, plat.x + plat.w/2, drawY + plat.h/2 + 2);
+                }
+            }
+
+            // Powerups (1-Up Mushroom)
+            for (let pu of gameSession.pf.powerups) {
+                if (pu.collected) continue;
+                let drawY = pu.y + (pu.bounceY || 0);
+                
+                // Draw a green Mushroom icon
+                ctx.fillStyle = '#22C55E'; // Green cap
+                ctx.beginPath();
+                ctx.roundRect(pu.x, drawY, pu.w, pu.h, [16, 16, 6, 6]);
+                ctx.fill();
+                
+                // White spots
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath(); ctx.arc(pu.x + 9, drawY + 11, 4.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(pu.x + 23, drawY + 11, 4.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(pu.x + 16, drawY + 20, 5.5, 0, Math.PI*2); ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(pu.x + 11, drawY + 24, 2, 5);
+                ctx.fillRect(pu.x + 19, drawY + 24, 2, 5);
+                
+                // Subtle glow
+                ctx.shadowColor = '#4ADE80'; ctx.shadowBlur = 10;
+                ctx.strokeStyle = '#16A34A'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            for (let coin of gameSession.pf.coins) {
+                if (!coin.collected) {
+                    ctx.fillStyle = '#FBBF24';
+                    ctx.beginPath(); ctx.arc(coin.x + coin.w/2, coin.y + coin.h/2, coin.w/2, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#F59E0B';
+                    ctx.beginPath(); ctx.arc(coin.x + coin.w/2, coin.y + coin.h/2, coin.w/2 * 0.6, 0, Math.PI*2); ctx.fill();
+                }
+            }
+
+            for (let en of gameSession.pf.enemies) {
+                if (!en.alive) continue;
+                if (en.type === 'math_goomba') {
+                    ctx.fillStyle = '#B45309';
+                    ctx.beginPath(); ctx.arc(en.x + en.w/2, en.y + en.h, en.w/2, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#FEF3C7';
+                    ctx.beginPath(); ctx.arc(en.x + en.w/2, en.y + en.h - 16, en.w/2 - 4, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.fillRect(en.x + 10, en.y + 12, 4, 4); ctx.fillRect(en.x + 22, en.y + 12, 4, 4);
+                } else if (en.type === 'flyer') {
+                    ctx.fillStyle = '#EC4899';
+                    ctx.beginPath(); ctx.roundRect(en.x, en.y, en.w, en.h, 16); ctx.fill();
+                    ctx.fillStyle = '#FBCFE8'; ctx.beginPath(); ctx.moveTo(en.x, en.y+10); ctx.lineTo(en.x-10, en.y+5); ctx.lineTo(en.x, en.y+18); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(en.x+en.w, en.y+10); ctx.lineTo(en.x+en.w+10, en.y+5); ctx.lineTo(en.x+en.w, en.y+18); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.fillRect(en.x + 8, en.y + 12, 4, 6); ctx.fillRect(en.x + 20, en.y + 12, 4, 6);
+                }
+            }
+
+            const p = gameSession.pf.player;
+            ctx.translate(p.x + p.w/2, p.y + p.h/2);
+            if (p.facing === 'left') ctx.scale(-1, 1);
+            
+            let pBounce = p.grounded ? 0 : -2;
+            let legWalk = p.grounded && Math.abs(p.vx) > 0.5 ? Math.sin(p.animFrame) * 8 : 0;
+
+            ctx.fillStyle = '#EF4444'; ctx.beginPath(); ctx.roundRect(-p.w/2 + 4, -p.h/2 - 12 + pBounce, 28, 16, 6); ctx.fill();
+            ctx.fillStyle = '#FCD34D'; ctx.beginPath(); ctx.roundRect(-p.w/2 + 6, -p.h/2 + pBounce, 24, 20, 8); ctx.fill();
+            ctx.fillStyle = '#3B82F6'; ctx.fillRect(-p.w/2 + 8, -p.h/2 + 20 + pBounce, 20, 10);
+            
+            ctx.fillStyle = '#9CA3AF';
+            ctx.beginPath(); ctx.roundRect(-p.w/2 + 6 + legWalk, -p.h/2 + 30 + pBounce, 10, 12, 4); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-p.w/2 + 20 - legWalk, -p.h/2 + 30 + pBounce, 10, 12, 4); ctx.fill();
+            
+            ctx.fillStyle = '#000'; ctx.fillRect(-p.w/2 + 20, -p.h/2 - 6 + pBounce, 4, 4);
+            
+            ctx.restore();
+
+            if (gameSession.pf.activeQuestion) {
+                const qText = gameSession.pf.activeQuestion.textPlain;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'; ctx.strokeStyle = '#CA8A04'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.roundRect(800/2 - 150, 40, 300, 80, 20); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#475569'; ctx.font = 'bold 16px Nunito, sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText("Spring op de juiste uitkomst!", 800/2, 65);
+                ctx.fillStyle = '#1E293B'; ctx.font = 'bold 36px Fredoka, sans-serif';
+                ctx.fillText(`${qText} = ?`, 800/2, 100);
+            }
+        }
+
+        function initVisualMode() { setVisualCategory('kwadraten'); }
+        
+        function setVisualCategory(cat) {
+            ['kwadraten', 'derdemachten', 'machten_2', 'machten_10'].forEach(c => {
+                const btn = document.getElementById(`vis-btn-${c}`);
+                if (!btn) return;
+                if (c === cat) btn.className = 'w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-indigo-600 text-white border-indigo-600 shadow-md';
+                else btn.className = 'w-full text-left p-3 rounded-xl font-bold text-sm btn-bounce border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+            });
+            renderVisualBar(cat);
+        }
+
+        function renderVisualBar(cat) {
+            const bar = document.getElementById('visual-value-bar'); bar.innerHTML = '';
+            let max = 10; if (cat === 'kwadraten') max = 15; else if (cat === 'derdemachten') max = 5; else if (cat === 'machten_10') max = 6;
+            
+            for (let i = 1; i <= max; i++) {
+                const btn = document.createElement('button');
+                btn.className = `min-w-[48px] h-12 rounded-xl font-bold text-lg border-b-4 btn-bounce transition-all ${
+                    (cat==='kwadraten'&&i===5) ? 'bg-amber-400 border-amber-500 text-amber-900 scale-110 shadow-lg' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`;
+                btn.innerText = i;
+                btn.onclick = (e) => {
+                    Array.from(bar.children).forEach(c => c.className = 'min-w-[48px] h-12 rounded-xl font-bold text-lg border-b-4 btn-bounce bg-white border-slate-200 text-slate-600 hover:bg-slate-50');
+                    e.target.className = 'min-w-[48px] h-12 rounded-xl font-bold text-lg border-b-4 btn-bounce bg-amber-400 border-amber-500 text-amber-900 scale-110 shadow-lg transition-all';
+                    renderVisualDisplay(cat, i);
+                };
+                bar.appendChild(btn);
+            }
+            if(cat==='kwadraten') renderVisualDisplay(cat, 5);
+            else if(cat==='derdemachten') renderVisualDisplay(cat, 3);
+            else renderVisualDisplay(cat, 4);
+        }
+
+        function renderVisualDisplay(cat, val) {
+            const area = document.getElementById('visual-display-area'); area.innerHTML = '';
+            const title = document.getElementById('visual-title');
+            const eq = document.getElementById('visual-equation');
+            const expl = document.getElementById('visual-explanation');
+
+            if (cat === 'kwadraten') {
+                title.innerText = `Kwadraat van ${val}`; eq.innerText = `${val}² = ${val*val}`;
+                expl.innerText = `${val}² (uitgesproken als "${val} in het kwadraat") betekent ${val} × ${val}. Visueel is dit de oppervlakte van een vierkant!`;
+                const size = Math.min(200 / val, 30);
+                for (let r = 0; r < val; r++) {
+                    const row = document.createElement('div'); row.className = 'flex gap-1';
+                    for (let c = 0; c < val; c++) {
+                        const cell = document.createElement('div');
+                        cell.style.width = `${size}px`; cell.style.height = `${size}px`;
+                        cell.className = 'bg-indigo-400 rounded-sm shadow-sm';
+                        row.appendChild(cell);
+                    }
+                    area.appendChild(row);
+                }
+            } else if (cat === 'derdemachten') {
+                title.innerText = `Derdemacht van ${val}`; eq.innerText = `${val}³ = ${val*val*val}`;
+                expl.innerText = `${val}³ (uitgesproken als "${val} tot de derde") betekent ${val} × ${val} × ${val}. Dit representeert de inhoud van een kubus.`;
+                area.innerHTML = '<div class="text-4xl animate-bounce">🧊</div><p class="text-xs text-slate-500 mt-2">(Stel je een grote 3D kubus voor!)</p>';
+            } else if (cat === 'machten_2') {
+                title.innerText = `Macht van 2: 2^${val}`; const ans = Math.pow(2, val); eq.innerText = `2^${val} = ${ans}`;
+                expl.innerText = `Machten van 2 verdubbelen elke stap! Dit laat zien hoe snel exponentiële groei gaat.`;
+                let dotsHTML = '<div class="flex flex-wrap gap-1 max-w-full justify-center">';
+                let maxDots = Math.min(ans, 200);
+                for (let i=0; i<maxDots; i++) dotsHTML += `<div class="w-3 h-3 bg-emerald-500 rounded-full"></div>`;
+                if (ans > 200) dotsHTML += `<div class="text-sm font-bold text-emerald-700 ml-2 mt-1">+ nog ${ans - 200} meer!</div>`;
+                dotsHTML += '</div>'; area.innerHTML = dotsHTML;
+            } else if (cat === 'machten_10') {
+                title.innerText = `Macht van 10: 10^${val}`; const ans = Math.pow(10, val);
+                eq.innerText = `10^${val} = 1${'0'.repeat(val)}`;
+                expl.innerText = `Een macht van 10 is makkelijk: het getal is een 1 gevolgd door ${val} nullen!`;
+                area.innerHTML = `<div class="text-2xl md:text-4xl font-extrabold text-sky-600 font-retro overflow-hidden max-w-full text-ellipsis">1${'0'.repeat(val)}</div>`;
+            }
+        }
+
+        function checkBadges() {
+            let newlyUnlocked = false;
+            if (appState.stars > 0 && !appState.badges.find(b=>b.id==='first_game').unlocked) { unlockBadge('first_game'); newlyUnlocked = true; }
+            if (gameSession.maxCombo >= 5 && !appState.badges.find(b=>b.id==='streak_5').unlocked) { unlockBadge('streak_5'); newlyUnlocked = true; }
+            if (appState.stars >= 50 && !appState.badges.find(b=>b.id==='stars_50').unlocked) { unlockBadge('stars_50'); newlyUnlocked = true; }
+            
+            let totCorr = Object.values(appState.stats).reduce((sum, s) => sum + s.correct, 0);
+            if (totCorr >= 50 && !appState.badges.find(b=>b.id==='master_power').unlocked) { unlockBadge('master_power'); newlyUnlocked = true; }
+            
+            if (newlyUnlocked) { sound.playFanfare(); saveState(); }
+        }
+
+        function unlockBadge(id) {
+            const b = appState.badges.find(x => x.id === id);
+            if (b && !b.unlocked) b.unlocked = true;
+        }
+
+        function renderTrophiesView() {
+            const bc = document.getElementById('badges-container'); bc.innerHTML = '';
+            appState.badges.forEach(b => {
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-2xl flex flex-col items-center justify-center text-center border-2 ${b.unlocked ? 'bg-amber-50 border-amber-300 shadow-md' : 'bg-slate-50 border-slate-200 grayscale opacity-60'}`;
+                div.innerHTML = `<div class="text-3xl mb-2">${b.icon}</div><div class="font-bold text-sm text-slate-800 leading-tight mb-1">${b.title}</div><div class="text-[10px] text-slate-500">${b.desc}</div>`;
+                bc.appendChild(div);
+            });
+
+            const sc = document.getElementById('category-stats-container'); sc.innerHTML = '';
+            Object.keys(CATEGORIES).forEach(k => {
+                const stat = appState.stats[k]; const cat = CATEGORIES[k];
+                const pct = stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
+                const div = document.createElement('div');
+                div.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3';
+                div.innerHTML = `
+                    <div class="text-2xl">${cat.icon}</div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between text-xs font-bold text-slate-700 mb-1"><span>${cat.name}</span><span>${pct}%</span></div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-indigo-500 h-full" style="width: ${pct}%"></div></div>
+                        <div class="text-[10px] text-slate-400 mt-1">${stat.correct} / ${stat.total} goed</div>
+                    </div>
+                `;
+                sc.appendChild(div);
+            });
+        }
+
+        function resetProgress() {
+            if (confirm("Weet je zeker dat je alle behaalde sterren en stats wilt wissen? Dit kan niet ongedaan worden gemaakt.")) {
+                localStorage.removeItem('kwadraten_machten_state');
+                appState.stars = 0;
+                appState.stats = {};
+                appState.badges.forEach(b => b.unlocked = false);
+                Object.keys(CATEGORIES).forEach(cat => appState.stats[cat] = { correct: 0, total: 0 });
+                saveState();
+                renderTrophiesView();
+                updateStarsDisplay();
+            }
+        }
+
+        function endGame() {
+            if (gameSession.timer) clearInterval(gameSession.timer);
+            if (balloonAnimFrame) cancelAnimationFrame(balloonAnimFrame);
+            if (pfReq) cancelAnimationFrame(pfReq);
+
+            sound.playFanfare();
+
+            if (gameSession.score >= 100 && appState.currentMode === 'timeattack') {
+                 unlockBadge('speed_demon');
+            }
+
+            document.getElementById('results-score').innerText = gameSession.score;
+            document.getElementById('results-correct').innerText = `${gameSession.correctCount} / ${gameSession.totalQuestions}`;
+            document.getElementById('results-combo').innerText = `x${gameSession.maxCombo}`;
+
+            let earnedStars = Math.floor(gameSession.score / 100) + Math.floor(gameSession.correctCount / 2);
+            if (appState.currentMode === 'balloons') earnedStars += (gameSession.lives > 0 ? 2 : 0);
+            
+            document.getElementById('results-stars').innerText = `+${earnedStars} ⭐`;
+            appState.stars += earnedStars;
+            
+            saveState(); checkBadges();
+            document.getElementById('modal-results').classList.remove('hidden');
+        }
+
+        function closeResultsModal() {
+            document.getElementById('modal-results').classList.add('hidden');
+        }
+
+        function restartCurrentGame() {
+            if (appState.currentMode === 'balloons') startBalloonsGame();
+            else if (appState.currentMode === 'timeattack') startTimeAttackGame();
+            else if (appState.currentMode === 'platformer') startPlatformerGame(gameSession.world);
+        }
+
+        function quitGame() {
+            if (gameSession.timer) clearInterval(gameSession.timer);
+            if (balloonAnimFrame) cancelAnimationFrame(balloonAnimFrame);
+            if (pfReq) cancelAnimationFrame(pfReq);
+            gameSession.pf = { isGameOver: true }; // stop platformer loop
+            showView('menu');
+        }
+
+    </script>
+</body>
+</html>
